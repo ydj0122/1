@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>중3 영단어 학습</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 20px;
+            background-color: #f0f4ff;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background-color: #e8f0fe;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+        .word-list {
+            background-color: #fff5f5;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        .word-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            background-color: #fefefe;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        .word-item:hover {
+            transform: translateX(5px);
+            background-color: #f8f9ff;
+        }
+        .meaning {
+            color: #666;
+            display: none;
+            margin-top: 5px;
+        }
+        .show-meanings .meaning {
+            display: block;
+        }
+        button {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #f8e5ff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: #f0d4ff;
+        }
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e5f0ff;
+            border-radius: 8px;
+        }
+        .progress {
+            color: #666;
+        }
+        .add-word-form {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #ffe5e5;
+            border-radius: 12px;
+            display: flex;
+            gap: 10px;
+        }
+        input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>중3 영단어 학습</h1>
+        <div class="controls">
+            <button onclick="toggleMeanings()" id="toggleButton">뜻 보기</button>
+            <button onclick="resetWords()">초기화</button>
+        </div>
+    </div>
+
+    <div class="add-word-form">
+        <input type="text" id="newWord" placeholder="새 단어" />
+        <input type="text" id="newMeaning" placeholder="뜻" />
+        <button onclick="addNewWord()">단어 추가</button>
+    </div>
+
+    <div class="word-list" id="wordList"></div>
+
+    <div class="navigation">
+        <div class="progress">
+            학습한 단어: <span id="masteredCount">0</span> / <span id="totalWords">0</span>
+        </div>
+        <div>
+            <button onclick="prevPage()" id="prevButton">이전</button>
+            <span id="pageInfo">1 / 1</span>
+            <button onclick="nextPage()" id="nextButton">다음</button>
+        </div>
+    </div>
+
+    <script>
+        const initialVocabulary = [
+            { word: 'achieve', meaning: '성취하다' },
+            { word: 'affect', meaning: '영향을 미치다' },
+            { word: 'approach', meaning: '접근하다' },
+            { word: 'barrier', meaning: '장벽' },
+            { word: 'benefit', meaning: '이익' },
+            { word: 'cause', meaning: '원인' },
+            { word: 'challenge', meaning: '도전' },
+            { word: 'communication', meaning: '의사소통' },
+            { word: 'convince', meaning: '설득하다' },
+            { word: 'curious', meaning: '호기심이 많은' }
+        ];
+
+        let vocabulary = [...initialVocabulary];
+        let unusedWords = [
+            { word: 'determine', meaning: '결정하다' },
+            { word: 'discuss', meaning: '토론하다' },
+            { word: 'encourage', meaning: '격려하다' },
+            { word: 'essential', meaning: '필수적인' },
+            { word: 'experience', meaning: '경험' },
+            { word: 'focus', meaning: '집중하다' },
+            { word: 'generate', meaning: '발생시키다' },
+            { word: 'handle', meaning: '다루다' },
+            { word: 'imagine', meaning: '상상하다' },
+            { word: 'improve', meaning: '향상시키다' }
+        ];
+
+        let currentPage = 0;
+        const wordsPerPage = 10;
+        let showMeanings = false;
+        let masteredWords = new Set();
+
+        function addNewWord() {
+            const wordInput = document.getElementById('newWord');
+            const meaningInput = document.getElementById('newMeaning');
+            
+            if (wordInput.value && meaningInput.value) {
+                vocabulary.push({
+                    word: wordInput.value,
+                    meaning: meaningInput.value
+                });
+                
+                wordInput.value = '';
+                meaningInput.value = '';
+                updateDisplay();
+            }
+        }
+
+        function toggleMeanings() {
+            showMeanings = !showMeanings;
+            document.getElementById('wordList').classList.toggle('show-meanings');
+            document.getElementById('toggleButton').textContent = 
+                showMeanings ? '뜻 가리기' : '뜻 보기';
+        }
+
+        function removeWord(word) {
+            vocabulary = vocabulary.filter(item => item.word !== word);
+            masteredWords.add(word);
+            
+            // 새로운 단어 추가
+            if (unusedWords.length > 0) {
+                const newWord = unusedWords.shift();
+                vocabulary.push(newWord);
+            }
+            
+            updateDisplay();
+        }
+
+        function resetWords() {
+            vocabulary = [...initialVocabulary];
+            unusedWords = [
+                { word: 'determine', meaning: '결정하다' },
+                { word: 'discuss', meaning: '토론하다' },
+                { word: 'encourage', meaning: '격려하다' },
+                { word: 'essential', meaning: '필수적인' },
+                { word: 'experience', meaning: '경험' },
+                { word: 'focus', meaning: '집중하다' },
+                { word: 'generate', meaning: '발생시키다' },
+                { word: 'handle', meaning: '다루다' },
+                { word: 'imagine', meaning: '상상하다' },
+                { word: 'improve', meaning: '향상시키다' }
+            ];
+            masteredWords.clear();
+            currentPage = 0;
+            showMeanings = false;
+            document.getElementById('wordList').classList.remove('show-meanings');
+            document.getElementById('toggleButton').textContent = '뜻 보기';
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            const startIndex = currentPage * wordsPerPage;
+            const pageWords = vocabulary.slice(startIndex, startIndex + wordsPerPage);
+            const totalPages = Math.ceil(vocabulary.length / wordsPerPage);
+
+            const wordListHTML = pageWords.map(item => `
+                <div class="word-item">
+                    <div>
+                        <div>${item.word}</div>
+                        <div class="meaning">${item.meaning}</div>
+                    </div>
+                    <button onclick="removeWord('${item.word}')">암기완료</button>
+                </div>
+            `).join('');
+            document.getElementById('wordList').innerHTML = wordListHTML;
+
+            document.getElementById('pageInfo').textContent = 
+                `${totalPages > 0 ? currentPage + 1 : 0} / ${totalPages}`;
+            document.getElementById('prevButton').disabled = currentPage === 0;
+            document.getElementById('nextButton').disabled = 
+                currentPage >= totalPages - 1;
+
+            document.getElementById('masteredCount').textContent = masteredWords.size;
+            document.getElementById('totalWords').textContent = 
+                initialVocabulary.length + unusedWords.length;
+
+            if (pageWords.length === 0 && currentPage > 0) {
+                currentPage--;
+                updateDisplay();
+            }
+        }
+
+        function prevPage() {
+            if (currentPage > 0) {
+                currentPage--;
+                updateDisplay();
+            }
+        }
+
+        function nextPage() {
+            const totalPages = Math.ceil(vocabulary.length / wordsPerPage);
+            if (currentPage < totalPages - 1) {
+                currentPage++;
+                updateDisplay();
+            }
+        }
+
+        updateDisplay();
+    </script>
+</body>
+</html>
+
+<script src="https://ads-partners.coupang.com/g.js"></script>
+<script>
+    new PartnersCoupang.G({"id":825164,"template":"carousel","trackingCode":"AF1732982","width":"680","height":"140","tsource":""});
+</script>
